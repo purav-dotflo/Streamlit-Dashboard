@@ -79,13 +79,9 @@ with st.container():
 
 if selected_user_id:
     st.subheader(f"Worksheets for {get_users()[selected_user_id]}")
-    user_worksheets = get_worksheets(selected_user_id)
     user_stats = get_user_stats(selected_user_id)
     if user_stats:
-        st.subheader("User Stats")
-
         col1, col2, col3, col4, col5 = st.columns(5)
-
         with col1:
             st.metric(label="Total Searches", value=user_stats["Total Searches"])
         with col2:
@@ -96,6 +92,7 @@ if selected_user_id:
             st.metric(label="Custom Research Prompts", value=user_stats["Custom Research Prompts"])
         with col5:
             st.metric(label="LinkedIn Profiles Enriched", value=user_stats["LinkedIn Profile Enriched"])
+    user_worksheets = get_worksheets(selected_user_id)
     if user_worksheets:
         for worksheet_id, worksheet_data in user_worksheets.items():
             with st.expander(f"Worksheet: {worksheet_data.get('name', worksheet_id)}"):

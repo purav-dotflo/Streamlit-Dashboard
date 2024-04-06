@@ -49,6 +49,22 @@ def get_overall_stats():
     
     return {"total_users": total_users, "total_worksheets": total_worksheets}
 
+@st.cache_data(ttl=600)
+def get_user_stats(user_id):
+    search_ref = db.collection('search-usage').document(user_id)
+    search_doc = search_ref.get()
+    person_profile_searches = search_doc.to_dict().get('personProfileSearches', 0)
+    company_profile_searches = search_doc.to_dict().get('companyProfileSearches', 0)
+    custom_searches = search_doc.to_dict().get('customSearches', 0)
+    linkedin_searches = search_doc.to_dict().get('linkedInSearches', 0)
+    return {
+        "Total Searches": person_profile_searches + company_profile_searches + custom_searches + linkedin_searches,
+        "Person Profiles Enriched": person_profile_searches,
+        "Company Profiles Enriched": company_profile_searches,
+        "Custom Research Prompts":  custom_searches,
+        "LinkedIn Profile Enriched": linkedin_searches
+    }
+
 st.sidebar.title("Navigation")
 selected_user_id = st.sidebar.selectbox('Select a User', options=list(get_users().keys()), format_func=lambda x: get_users()[x])
 
@@ -64,6 +80,22 @@ with st.container():
 if selected_user_id:
     st.subheader(f"Worksheets for {get_users()[selected_user_id]}")
     user_worksheets = get_worksheets(selected_user_id)
+    user_stats = get_user_stats(selected_user_id)
+    if user_stats:
+        st.subheader("User Stats")
+
+        col1, col2, col3, col4, col5 = st.columns(5)
+
+        with col1:
+            st.metric(label="Total Searches", value=user_stats["Total Searches"])
+        with col2:
+            st.metric(label="Person Profiles Enriched", value=user_stats["Person Profiles Enriched"])
+        with col3:
+            st.metric(label="Company Profiles Enriched", value=user_stats["Company Profiles Enriched"])
+        with col4:
+            st.metric(label="Custom Research Prompts", value=user_stats["Custom Research Prompts"])
+        with col5:
+            st.metric(label="LinkedIn Profiles Enriched", value=user_stats["LinkedIn Profile Enriched"])
     if user_worksheets:
         for worksheet_id, worksheet_data in user_worksheets.items():
             with st.expander(f"Worksheet: {worksheet_data.get('name', worksheet_id)}"):

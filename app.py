@@ -115,9 +115,27 @@ if selected_user_id:
 
 with st.sidebar:
     st.subheader("Feedback")
-    feedback_list = get_feedback()
-    for feedback in feedback_list:
-        st.write(feedback)
+    feedback_list = get_feedback()  
+    if not feedback_list:
+        st.write("No feedback found.")
+    else:
+        for feedback in feedback_list:
+            dialog_texts = feedback["dialogContent"]
+            feedback_type = feedback["feedbackType"]
+
+            summary = "Feedbacks"
+
+            with st.expander(summary):
+                for dialog in dialog_texts:
+                    dialog_text = dialog["text"]
+                    st.markdown(f"**Dialog:** {dialog_text}")
+
+                    if feedback_type == "thumbsUp":
+                        st.markdown("👍")
+                    elif feedback_type == "thumbsDown":
+                        st.markdown("👎")
+
+
 
 
 

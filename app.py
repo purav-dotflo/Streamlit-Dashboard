@@ -53,6 +53,14 @@ def get_overall_stats():
 def get_user_stats(user_id):
     search_ref = db.collection('search-usage').document(user_id)
     search_doc = search_ref.get()
+    if not search_doc.exists:
+        return {
+            "Total Searches": 0,
+            "Person Profiles Enriched": 0,
+            "Company Profiles Enriched": 0,
+            "Custom Research Prompts": 0,
+            "LinkedIn Profile Enriched": 0
+        }
     person_profile_searches = search_doc.to_dict().get('personProfileSearches', 0)
     company_profile_searches = search_doc.to_dict().get('companyProfileSearches', 0)
     custom_searches = search_doc.to_dict().get('customSearches', 0)
@@ -92,6 +100,8 @@ if selected_user_id:
             st.metric(label="Custom Research Prompts", value=user_stats["Custom Research Prompts"])
         with col5:
             st.metric(label="LinkedIn Profiles Enriched", value=user_stats["LinkedIn Profile Enriched"])
+    else:
+        st.write("No search data found for this user.")
     user_worksheets = get_worksheets(selected_user_id)
     if user_worksheets:
         for worksheet_id, worksheet_data in user_worksheets.items():

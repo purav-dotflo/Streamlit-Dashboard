@@ -2,7 +2,6 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore
 import json  # In case we need to pretty-print JSON data
-import yaml
 
 st.set_page_config(page_title="Streamlit Firestore Dashboard", layout="wide")
 

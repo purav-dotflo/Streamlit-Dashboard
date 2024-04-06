@@ -6,7 +6,7 @@ import yaml
 
 st.set_page_config(page_title="Streamlit Firestore Dashboard", layout="wide")
 
-service_account_key_path = "service.json"
+service_account_key_path = json.loads(st.secrets["firebase_service"])
 try:
     firebase_admin.get_app()
 except ValueError as e:

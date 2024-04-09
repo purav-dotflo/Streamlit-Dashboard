@@ -28,7 +28,6 @@ def get_user_trials(user_id):
     user_doc = user_ref.get()
     plan = user_doc.to_dict().get('current_plan', 'No Plan')
     trial_activation = user_doc.to_dict().get('trial_activated_date')
-    
     days_left = 0
     
     if trial_activation:
@@ -43,6 +42,20 @@ def get_user_trials(user_id):
 
     return plan, days_left
 
+def update_user_plan(user_id, new_plan):
+    user_ref = db.collection('users').document(user_id)
+    update_data = {'current_plan': new_plan}
+
+    if new_plan == 'trial':
+        update_data = {'trial_activated_date': datetime.now().isoformat()}
+
+    try:
+        user_ref.update(update_data)
+        st.success(f"Plan updated to {new_plan} for user ID: {user_id}.")
+        if new_plan == 'trial':
+            st.success("Trial activation date updated.")
+    except Exception as e:
+        st.error(f"Failed to update user plan: {e}")
 
 @st.cache_data(ttl=600)
 def get_worksheets(user_id):
@@ -232,7 +245,12 @@ if selected_user_id:
 #                         st.markdown("👎")
 
 with st.sidebar:
-    st.subheader("User Stats")
+    st.subheader("Update Plan")
+    with st.container():
+        new_plan = st.selectbox("Select Plan", options=["Trial", "Inactive", "Premium"])
+        if st.button("Update Plan"):
+            update_user_plan(selected_user_id, new_plan)
+
     user_stats = get_user_stats(selected_user_id)
     if not user_stats:
         st.write("No search data found for this user.")

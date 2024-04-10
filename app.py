@@ -31,7 +31,7 @@ def get_user_trials(user_id):
     days_left = 0
     
     if trial_activation:
-        trial_activation_date = datetime.strptime(trial_activation, "%Y-%m-%dT%H:%M:%S.%fZ")
+        trial_activation_date = datetime.strptime(trial_activation, "%Y-%m-%dT%H:%M:%S.%f")
         trial_end_date = trial_activation_date + timedelta(days=14)
         current_date = datetime.now()
         
@@ -42,20 +42,26 @@ def get_user_trials(user_id):
 
     return plan, days_left
 
+
 def update_user_plan(user_id, new_plan):
     user_ref = db.collection('users').document(user_id)
     update_data = {'current_plan': new_plan}
 
-    if new_plan == 'trial':
-        update_data = {'trial_activated_date': datetime.now().isoformat()}
+    if new_plan.lower() == 'trial':
+        update_data['trial_activated_date'] = datetime.now().isoformat()
+    elif new_plan.lower() == 'premium':
+        update_data['last_plan_upgrade_date'] = datetime.now().isoformat()
 
     try:
         user_ref.update(update_data)
         st.success(f"Plan updated to {new_plan} for user ID: {user_id}.")
-        if new_plan == 'trial':
+        if new_plan.lower() == 'trial':
             st.success("Trial activation date updated.")
+        elif new_plan.lower() == 'premium':
+            st.success("Last plan upgrade date updated.")
     except Exception as e:
         st.error(f"Failed to update user plan: {e}")
+
 
 @st.cache_data(ttl=600)
 def get_worksheets(user_id):
@@ -222,27 +228,27 @@ if selected_user_id:
     else:
         st.write("No worksheets found.")
 
-# with st.sidebar:
-#     st.subheader("Feedback")
-#     feedback_list = get_feedback()  
-#     if not feedback_list:
-#         st.write("No feedback found.")
-#     else:
-#         for feedback in feedback_list:
-#             dialog_texts = feedback["dialogContent"]
-#             feedback_type = feedback["feedbackType"]
+    # with st.sidebar:
+    #     st.subheader("Feedback")
+    #     feedback_list = get_feedback()  
+    #     if not feedback_list:
+    #         st.write("No feedback found.")
+    #     else:
+    #         for feedback in feedback_list:
+    #             dialog_texts = feedback["dialogContent"]
+    #             feedback_type = feedback["feedbackType"]
 
-#             summary = "Feedbacks"
+    #             summary = "Feedbacks"
 
-#             with st.expander(summary):
-#                 for dialog in dialog_texts:
-#                     dialog_text = dialog["text"]
-#                     st.markdown(f"**Dialog:** {dialog_text}")
+    #             with st.expander(summary):
+    #                 for dialog in dialog_texts:
+    #                     dialog_text = dialog["text"]
+    #                     st.markdown(f"**Dialog:** {dialog_text}")
 
-#                     if feedback_type == "thumbsUp":
-#                         st.markdown("👍")
-#                     elif feedback_type == "thumbsDown":
-#                         st.markdown("👎")
+    #                     if feedback_type == "thumbsUp":
+    #                         st.markdown("👍")
+    #                     elif feedback_type == "thumbsDown":
+    #                         st.markdown("👎")
 
 with st.sidebar:
     st.subheader("Update Plan")
@@ -281,4 +287,7 @@ with st.sidebar:
 
 ## feedback
 ## number of users (plan)
+
 ## better UI
+## bar graph of usage (users vs searches)
+## auth signins

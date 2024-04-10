@@ -65,7 +65,11 @@ def get_user_trials(user_id):
     days_left = 0
     
     if trial_activation:
-        trial_activation_date = datetime.strptime(trial_activation, "%Y-%m-%dT%H:%M:%S.%fZ")
+        # trial_activation_date = datetime.strptime(trial_activation, "%Y-%m-%dT%H:%M:%S.%fZ")
+        try:
+            trial_activation_date = datetime.strptime(trial_activation, "%Y-%m-%dT%H:%M:%S.%fZ")
+        except ValueError:
+            trial_activation_date = datetime.strptime(trial_activation, "%Y-%m-%dT%H:%M:%S.%f")
         trial_end_date = trial_activation_date + timedelta(days=14)
         current_date = datetime.now()
         

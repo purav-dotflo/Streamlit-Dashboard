@@ -4,6 +4,10 @@ from firebase_admin import credentials, firestore
 import json  
 from dateutil.parser import parse
 from datetime import timedelta, datetime
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import plotly.express as px
 
 st.set_page_config(page_title="Streamlit Firestore Dashboard", layout="wide")
 
@@ -21,6 +25,36 @@ def get_users():
     users_ref = db.collection('users')
     users = users_ref.stream()
     return {user.id: user.to_dict().get('displayName', 'No Name') for user in users}
+
+
+@st.cache_data(ttl=600)
+def overall_users_usage_bar_graph():
+    users_ref = db.collection('users')
+    users = users_ref.stream()
+    excluded_users = ["Purav Biyani", "Spencer Tate", "Nemath Ahmed"]
+
+    data = []
+
+    for user in users:
+        user_data = user.to_dict()
+        if user_data.get('displayName') in excluded_users:
+            continue
+        search_stats_ref = db.collection('search-usage').document(user.id)
+        search_stats_doc = search_stats_ref.get()
+        if search_stats_doc.exists:
+            search_stats = search_stats_doc.to_dict()
+            total_searches = search_stats.get('personProfileSearches', 0) + search_stats.get('customSearches', 0) + search_stats.get('companyProfileSearches', 0) + search_stats.get('linkedInSearches', 0)
+            data.append({
+                "User": user_data.get('displayName'),
+                "Total Searches": total_searches
+            })
+    
+    df = pd.DataFrame(data)
+    df = df.sort_values("Total Searches", ascending=True)
+
+    fig = px.bar(df, x="Total Searches", y="User", orientation='h', title="Total Searches by User")
+    fig.update_layout(yaxis={'categoryorder':'total ascending'})
+    st.plotly_chart(fig)
 
 
 def get_user_trials(user_id):
@@ -172,46 +206,50 @@ with st.container():
 overall_stats = get_overall_stats()
 overall_usage_stats = get_overall_usage_stats()
 
-st.subheader("Overall Stats")
+with st.expander("Overall Stats"):
+    col1, col2 = st.columns(2)
 
-col1, col2 = st.columns(2)
+    with col1:
+        with st.container(border=True):
+            st.markdown(f"Total Users: {overall_stats['total_users']}")
 
-with col1:
+    with col2:
+        with st.container(border=True):
+            st.markdown(f"Total Worksheets: {overall_stats['total_worksheets']}")
+
+    with st.subheader("Overall Usage Bar Graph"):
+        with st.container():
+            overall_users_usage_bar_graph()
+
+
+    st.subheader("Overall Usage Stats")
     with st.container(border=True):
-        st.markdown(f"Total Users: {overall_stats['total_users']}")
-
-with col2:
-    with st.container(border=True):
-        st.markdown(f"Total Worksheets: {overall_stats['total_worksheets']}")
-
-st.subheader("Overall Usage Stats")
-with st.container(border=True):
-    col3, col4, col5, col6, col7 = st.columns(5)
-    
-    with col3:
-        with st.container(border=True):
-            st.markdown("Total Searches")
-            st.markdown(overall_usage_stats["total_searches"])
-    
-    with col4:
-        with st.container(border=True):
-            st.markdown("Person Profiles")
-            st.markdown(overall_usage_stats["total_profile_enrichments"])
-    
-    with col5:
-        with st.container(border=True):
-            st.markdown("Company Profiles")
-            st.markdown(overall_usage_stats["total_company_profiles"])
-    
-    with col6:
-        with st.container(border=True):
-            st.markdown("Custom Prompts")
-            st.markdown(overall_usage_stats["total_custom_research_prompts"])
-    
-    with col7:
-        with st.container(border=True):
-            st.markdown("LinkedIn Searches")
-            st.markdown(overall_usage_stats["total_linkedin_profiles"])
+        col3, col4, col5, col6, col7 = st.columns(5)
+        
+        with col3:
+            with st.container(border=True):
+                st.markdown("Total Searches")
+                st.markdown(overall_usage_stats["total_searches"])
+        
+        with col4:
+            with st.container(border=True):
+                st.markdown("Person Profiles")
+                st.markdown(overall_usage_stats["total_profile_enrichments"])
+        
+        with col5:
+            with st.container(border=True):
+                st.markdown("Company Profiles")
+                st.markdown(overall_usage_stats["total_company_profiles"])
+        
+        with col6:
+            with st.container(border=True):
+                st.markdown("Custom Prompts")
+                st.markdown(overall_usage_stats["total_custom_research_prompts"])
+        
+        with col7:
+            with st.container(border=True):
+                st.markdown("LinkedIn Searches")
+                st.markdown(overall_usage_stats["total_linkedin_profiles"])
 
 
 if selected_user_id:

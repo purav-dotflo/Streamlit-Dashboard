@@ -52,7 +52,7 @@ def overall_users_usage_bar_graph():
     df = pd.DataFrame(data)
     df = df.sort_values("Total Searches", ascending=True)
 
-    fig = px.bar(df, x="Total Searches", y="User", orientation='h', title="Total Searches by User")
+    fig = px.bar(df, x="Total Searches", y="User", orientation='h', title="Total Searches by Users")
     fig.update_layout(yaxis={'categoryorder':'total ascending'})
     st.plotly_chart(fig)
 

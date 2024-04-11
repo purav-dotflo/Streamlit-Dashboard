@@ -20,17 +20,58 @@ except ValueError as e:
 
 db = firestore.client()
 
+get_user_counter = 0
+get_overall_usage_bar_grpah_counter = 0
+get_user_trial_counter = 0
+get_update_user_plan_counter = 0
+get_worksheets_counter = 0
+get_feedback_counter = 0
+get_overall_stats_counter = 0
+get_overall_usage_stats_counter = 0
+get_user_stats_counter = 0
+get_search_stats_counter = 0
+
+@st.cache_data(ttl=600)
+def get_firestore_counts():
+    global get_user_counter
+    global get_overall_usage_bar_grpah_counter
+    global get_user_trial_counter
+    global get_update_user_plan_counter
+    global get_worksheets_counter
+    global get_feedback_counter
+    global get_overall_stats_counter
+    global get_overall_usage_stats_counter
+    global get_user_stats_counter
+    global get_search_stats_counter
+
+    return {
+        "get_user_counter": get_user_counter,
+        "get_overall_usage_bar_grpah_counter": get_overall_usage_bar_grpah_counter,
+        "get_user_trial_counter": get_user_trial_counter,
+        "get_update_user_plan_counter": get_update_user_plan_counter,
+        "get_worksheets_counter": get_worksheets_counter,
+        "get_feedback_counter": get_feedback_counter,
+        "get_overall_stats_counter": get_overall_stats_counter,
+        "get_overall_usage_stats_counter": get_overall_usage_stats_counter,
+        "get_user_stats_counter": get_user_stats_counter,
+        "get_search_stats_counter": get_search_stats_counter
+    }
+
 @st.cache_data(ttl=600)
 def get_users():
+    global get_user_counter
     users_ref = db.collection('users')
     users = users_ref.stream()
+    get_user_counter += 1
     return {user.id: user.to_dict().get('displayName', 'No Name') for user in users}
 
 
 @st.cache_data(ttl=600)
 def overall_users_usage_bar_graph():
+    global get_overall_usage_bar_grpah_counter
     users_ref = db.collection('users')
     users = users_ref.stream()
+    get_overall_usage_bar_grpah_counter += 1
     excluded_users = ["Purav Biyani", "Spencer Tate", "Nemath Ahmed"]
 
     data = []
@@ -56,10 +97,12 @@ def overall_users_usage_bar_graph():
     fig.update_layout(yaxis={'categoryorder':'total ascending'})
     st.plotly_chart(fig)
 
-
+@st.cache_data(ttl=600)
 def get_user_trials(user_id):
+    global get_user_trial_counter
     user_ref = db.collection('users').document(user_id)
     user_doc = user_ref.get()
+    get_user_trial_counter += 1
     plan = user_doc.to_dict().get('current_plan', 'No Plan')
     trial_activation = user_doc.to_dict().get('trial_activated_date')
     days_left = 0
@@ -80,10 +123,12 @@ def get_user_trials(user_id):
 
     return plan, days_left
 
-
+@st.cache_data(ttl=600)
 def update_user_plan(user_id, new_plan):
+    global get_update_user_plan_counter
     user_ref = db.collection('users').document(user_id)
     update_data = {'current_plan': new_plan}
+    get_update_user_plan_counter += 1
 
     if new_plan.lower() == 'trial':
         update_data['trial_activated_date'] = datetime.now().isoformat()
@@ -103,21 +148,26 @@ def update_user_plan(user_id, new_plan):
 
 @st.cache_data(ttl=600)
 def get_worksheets(user_id):
+    global get_worksheets_counter
     worksheet_doc_ref = db.collection('worksheets').document(user_id)
     worksheet_doc = worksheet_doc_ref.get()
+    get_worksheets_counter += 1
     return worksheet_doc.to_dict() if worksheet_doc.exists else {}
 
 @st.cache_data(ttl=600)
 def get_feedback():
+    global get_feedback_counter
     feedback_ref = db.collection('v4-feedback')
     feedback_docs = feedback_ref.stream()
+    get_feedback_counter += 1
     return [doc.to_dict() for doc in feedback_docs]
 
 @st.cache_data(ttl=600)
 def get_overall_stats():
+    global get_overall_stats_counter
     users_ref = db.collection('users')
     users = users_ref.stream()
-
+    get_overall_stats_counter += 1
     excluded_users = ["Purav Biyani", "Spencer Tate", "Nemath Ahmed"]
 
     total_users = 0
@@ -136,8 +186,11 @@ def get_overall_stats():
 
 @st.cache_data(ttl=600)
 def get_overall_usage_stats():
+    global get_overall_usage_stats_counter
+    global get_search_stats_counter
     users_ref = db.collection('users')
     users = users_ref.stream()
+    get_overall_usage_stats_counter += 1
 
     total_users = 0
     total_searches = 0
@@ -159,6 +212,7 @@ def get_overall_usage_stats():
 
         search_stats_ref = db.collection('search-usage').document(user.id)
         search_stats_doc = search_stats_ref.get()
+        get_search_stats_counter += 1
         if search_stats_doc.exists:
             search_stats = search_stats_doc.to_dict()
             total_profile_enrichments += search_stats.get('personProfileSearches', 0) 
@@ -179,8 +233,10 @@ def get_overall_usage_stats():
 
 @st.cache_data(ttl=600)
 def get_user_stats(user_id):
+    global get_user_stats_counter
     search_ref = db.collection('search-usage').document(user_id)
     search_doc = search_ref.get()
+    get_user_stats_counter += 1
     if not search_doc.exists:
         return {
             "Total Searches": 0,
@@ -326,7 +382,22 @@ with st.sidebar:
             st.markdown(f"{user_stats['LinkedIn Profile Enriched']}")
 
 
+log_counter = []
+log_counter.append(get_user_counter)
+log_counter.append(get_overall_usage_bar_grpah_counter)
+log_counter.append(get_user_trial_counter)
+log_counter.append(get_update_user_plan_counter)
+log_counter.append(get_worksheets_counter)
+log_counter.append(get_feedback_counter)
+log_counter.append(get_overall_stats_counter)
+log_counter.append(get_overall_usage_stats_counter)
+log_counter.append(get_user_stats_counter)
+log_counter.append(get_search_stats_counter)
 
+total = sum(log_counter)
+print(f"Total number of Firestore reads: {total}")
+for i, counter in enumerate(log_counter):
+    print(f"Counter {i+1}: {counter}")
 ## feedback
 ## number of users (plan)
 

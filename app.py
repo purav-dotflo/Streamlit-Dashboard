@@ -57,6 +57,11 @@ def get_firestore_counts():
         "get_search_stats_counter": get_search_stats_counter
     }
 
+def update_counts_file():
+    counts = get_firestore_counts()
+    with open("counts.json", "w") as f:
+        json.dump(counts, f)
+
 @st.cache_data(ttl=600)
 def get_users():
     global get_user_counter
@@ -108,11 +113,7 @@ def get_user_trials(user_id):
     days_left = 0
     
     if trial_activation:
-        # trial_activation_date = datetime.strptime(trial_activation, "%Y-%m-%dT%H:%M:%S.%fZ")
-        try:
-            trial_activation_date = datetime.strptime(trial_activation, "%Y-%m-%dT%H:%M:%S.%fZ")
-        except ValueError:
-            trial_activation_date = datetime.strptime(trial_activation, "%Y-%m-%dT%H:%M:%S.%f")
+        trial_activation_date = datetime.strptime(trial_activation, "%Y-%m-%dT%H:%M:%S.%f")
         trial_end_date = trial_activation_date + timedelta(days=14)
         current_date = datetime.now()
         
@@ -124,7 +125,7 @@ def get_user_trials(user_id):
     return plan, days_left
 
 @st.cache_data(ttl=600)
-def update_user_plan(user_id, new_plan):
+def update_user_plan(user_id, new_plan, ):
     global get_update_user_plan_counter
     user_ref = db.collection('users').document(user_id)
     update_data = {'current_plan': new_plan}
@@ -326,34 +327,15 @@ if selected_user_id:
     else:
         st.write("No worksheets found.")
 
-    # with st.sidebar:
-    #     st.subheader("Feedback")
-    #     feedback_list = get_feedback()  
-    #     if not feedback_list:
-    #         st.write("No feedback found.")
-    #     else:
-    #         for feedback in feedback_list:
-    #             dialog_texts = feedback["dialogContent"]
-    #             feedback_type = feedback["feedbackType"]
-
-    #             summary = "Feedbacks"
-
-    #             with st.expander(summary):
-    #                 for dialog in dialog_texts:
-    #                     dialog_text = dialog["text"]
-    #                     st.markdown(f"**Dialog:** {dialog_text}")
-
-    #                     if feedback_type == "thumbsUp":
-    #                         st.markdown("👍")
-    #                     elif feedback_type == "thumbsDown":
-    #                         st.markdown("👎")
-
 with st.sidebar:
-    st.subheader("Update Plan")
-    with st.container():
-        new_plan = st.selectbox("Select Plan", options=["Trial", "Inactive", "Premium"])
-        if st.button("Update Plan"):
-            update_user_plan(selected_user_id, new_plan)
+    with st.container(border=True):
+        st.subheader("Update Plan")
+        with st.container():
+            new_plan = st.selectbox("Select Plan", options=["Trial", "Inactive", "Premium"])
+            # activation_date = st.date_input("Activation Date", min_value=datetime.now().date())
+
+            if st.button("Update Plan"):
+                update_user_plan(selected_user_id, new_plan)
 
     user_stats = get_user_stats(selected_user_id)
     if not user_stats:

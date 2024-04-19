@@ -25,13 +25,12 @@ worksheet_doc_ref = db.collection('worksheets')
 search_stats_ref = db.collection('search-usage')
 
 
-@st.cache_data(ttl=660)
+@st.cache_data(ttl=600)
 def get_users():
     global users_ref
     users = users_ref.stream()
     return {user.id: user.to_dict().get('displayName', 'No Name') for user in users}
     
-@st.cache_data(ttl=600)
 def get_user_trials(user_id):
     global users_ref
     user_doc = users_ref.document(user_id).get()
@@ -52,19 +51,21 @@ def get_user_trials(user_id):
     return plan, days_left
 
 @st.cache_data(ttl=600)
-def update_user_plan(user_id, new_plan):
+def update_user_plan(user_id, new_plan, activation_datetime):
     global users_ref
     update_data = {'current_plan': new_plan}
-    get_update_user_plan_counter += 1
-
+    
+    activation_datetime_str = activation_datetime.strftime("%Y-%m-%dT%H:%M:%S.%f")
+    
     if new_plan.lower() == 'trial':
-        update_data['trial_activated_date'] = datetime.now().isoformat()
+        update_data['trial_activated_date'] = activation_datetime_str
     elif new_plan.lower() == 'premium':
-        update_data['last_plan_upgrade_date'] = datetime.now().isoformat()
+        update_data['last_plan_upgrade_date'] = activation_datetime_str
 
     try:
-        users_ref.update(update_data)
+        users_ref.document(user_id).update(update_data)
         st.success(f"Plan updated to {new_plan} for user ID: {user_id}.")
+        st.success(f"Activation datetime: {activation_datetime_str}")
         if new_plan.lower() == 'trial':
             st.success("Trial activation date updated.")
         elif new_plan.lower() == 'premium':
@@ -124,10 +125,18 @@ with st.sidebar:
         st.subheader("Update Plan")
         with st.container():
             new_plan = st.selectbox("Select Plan", options=["Trial", "Inactive", "Premium"])
-            # activation_date = st.date_input("Activation Date", min_value=datetime.now().date())
-
+            use_current_datetime = st.checkbox("Use Current Datetime")
+            
+            if use_current_datetime:
+                activation_datetime_str = datetime.now().isoformat()
+            else:
+                activation_datetime_str = st.text_input("Activation Datetime " , 
+                                                        value=datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f"))
+            
             if st.button("Update Plan"):
-                update_user_plan(selected_user_id, new_plan)
+                activation_datetime = datetime.strptime(activation_datetime_str, "%Y-%m-%dT%H:%M:%S.%f")
+                update_user_plan(selected_user_id, new_plan, activation_datetime)
+
 
     user_stats = get_user_stats(selected_user_id)
     if not user_stats:

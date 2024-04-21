@@ -55,17 +55,17 @@ def update_user_plan(user_id, new_plan, activation_datetime):
     global users_ref
     update_data = {'current_plan': new_plan}
     
-    activation_datetime_str = activation_datetime.strftime("%Y-%m-%dT%H:%M:%S.%f")
-    
+    activation_datetime = activation_datetime.strftime("%Y-%m-%dT%H:%M:%S.%f")
+
     if new_plan.lower() == 'trial':
-        update_data['trial_activated_date'] = activation_datetime_str
+        update_data['trial_activated_date'] = activation_datetime
     elif new_plan.lower() == 'premium':
-        update_data['last_plan_upgrade_date'] = activation_datetime_str
+        update_data['last_plan_upgrade_date'] = activation_datetime
 
     try:
         users_ref.document(user_id).update(update_data)
         st.success(f"Plan updated to {new_plan} for user ID: {user_id}.")
-        st.success(f"Activation datetime: {activation_datetime_str}")
+        st.success(f"Activation datetime: {activation_datetime}")
         if new_plan.lower() == 'trial':
             st.success("Trial activation date updated.")
         elif new_plan.lower() == 'premium':
@@ -125,14 +125,23 @@ with st.sidebar:
         st.subheader("Update Plan")
         with st.container():
             new_plan = st.selectbox("Select Plan", options=["Trial", "Inactive", "Premium"])
+
+            activation_datetime_str = ""    
+            trial_activation_date = users_ref.document(selected_user_id).get().to_dict().get('trial_activated_date')
+            premium_activation_date = users_ref.document(selected_user_id).get().to_dict().get('last_plan_upgrade_date')
+
             use_current_datetime = st.checkbox("Use Current Datetime")
-            
+
             if use_current_datetime:
                 activation_datetime_str = datetime.now().isoformat()
             else:
-                activation_datetime_str = st.text_input("Activation Datetime " , 
-                                                        value=datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f"))
-            
+                if new_plan.lower() == 'trial':
+                    activation_datetime_str = st.text_input("Trial Activation Datetime", value=trial_activation_date)
+                elif new_plan.lower() == 'premium':
+                    activation_datetime_str = st.text_input("Premium Activation Datetime", value=premium_activation_date)
+                else:
+                    activation_datetime_str = datetime.now().isoformat()
+                        
             if st.button("Update Plan"):
                 activation_datetime = datetime.strptime(activation_datetime_str, "%Y-%m-%dT%H:%M:%S.%f")
                 update_user_plan(selected_user_id, new_plan, activation_datetime)

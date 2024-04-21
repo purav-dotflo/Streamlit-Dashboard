@@ -141,6 +141,9 @@ with st.sidebar:
                     activation_datetime_str = st.text_input("Premium Activation Datetime", value=premium_activation_date)
                 else:
                     activation_datetime_str = datetime.now().isoformat()
+            
+            if activation_datetime_str.endswith('Z'):
+                activation_datetime_str = activation_datetime_str[:-1]
                         
             if st.button("Update Plan"):
                 activation_datetime = datetime.strptime(activation_datetime_str, "%Y-%m-%dT%H:%M:%S.%f")
